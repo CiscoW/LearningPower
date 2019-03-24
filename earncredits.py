@@ -50,6 +50,7 @@ def read_article_earn_credits():
         read_article.switch_to_window(read_article.get_current_window_handle())
         if num >= READ_ARTICLE_NUM:
             read_article.close_current_window()
+            read_article.switch_to_window(read_article.get_current_window_handle())
             break
 
 
