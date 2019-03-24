@@ -1,12 +1,22 @@
 import cv2 as cv
+import time
 
 
 class Study(object):
     def __init__(self, user_behavior):
         self.user_behavior = user_behavior
 
+    def implicitly_wait(self, time_out):
+        self.user_behavior.implicitly_wait(time_out)
+
+    def refresh(self):
+        self.user_behavior.refresh()
+
     def visit(self, by_id=None, by_name=None, by_css_selector=None, by_xpath=None, timeout=None):
         self.user_behavior.click_button(by_id, by_name, by_css_selector, by_xpath, timeout)
+
+    def open_window_handle(self, url):
+        self.user_behavior.open_window_handle(url)
 
     def get_current_window_handle(self):
         return self.user_behavior.get_window_handles()[-1]
@@ -20,11 +30,18 @@ class Study(object):
     def scroll_bottom(self):
         self.user_behavior.scroll_bottom()
 
+    def page_source(self):
+        return self.user_behavior.page_source()
+
     def close_current_window(self):
         self.user_behavior.close_current_window()
 
     def close_browser(self):
         self.user_behavior.close_browser()
+
+    def clicks(self, by_id=None, by_name=None, by_css_selector=None, by_xpath=None):
+        for _ in self.user_behavior.clicks(by_id, by_name, by_css_selector, by_xpath):
+            yield
 
 
 class ReadArticle(Study):
@@ -35,20 +52,31 @@ class ReadArticle(Study):
         self.visit(by_css_selector=study_and_research)
         self.switch_to_window(self.get_current_window_handle())
 
-    def clicks(self, by_id=None, by_name=None, by_css_selector=None, by_xpath=None):
-        for _ in self.user_behavior.clicks(by_id, by_name, by_css_selector, by_xpath):
-            yield
-
 
 class LongTimeReadArticle(ReadArticle):
     pass
 
 
 class WatchVideo(Study):
-    pass
+    FIRST_CHANNEL_URL = 'https://www.xuexi.cn/4426aa87b0b64ac671c96379a3a8bd26/db086044562a57b441c24f2af1c8e101.html'
+
+    def __init__(self, user_behavior, url=FIRST_CHANNEL_URL):
+        super(WatchVideo, self).__init__(user_behavior)
+        self.open_window_handle(url)
+        self.switch_to_window(self.get_current_window_handle())
+
+    def was_over(self):
+        p1 = self.page_source()
+        time.sleep(1)
+        p2 = self.page_source()
+
+        if p1 == p2:
+            return True
+        else:
+            return False
 
 
-class LongTimeWatchVideo(Study):
+class LongTimeWatchVideo(WatchVideo):
     pass
 
 
@@ -56,7 +84,8 @@ class Login(object):
     NAME = "login.png"
     CODE_HEIGHT = slice(60, 350)
     CODE_WIDTH = slice(500, 850)
-    BY_XPATH = '//*[@id="C8putwnd60vk00"]'
+    # BY_XPATH = '//*[@id="C8putwnd60vk00"]'
+    WINDOW_WIDTH, WINDOW_HEIGHT = (1365, 737)
 
     SCROLL_SIZE = 900
 
@@ -78,18 +107,41 @@ class Login(object):
         cv.waitKey()
         cv.destroyAllWindows()
 
-    def click_login(self, by_xpath=BY_XPATH):
-        self.user_behavior.click_button(by_xpath=by_xpath)
-        self.user_behavior.switch_to_window(self.get_current_window_handle())
+    # def click_login(self, by_xpath=BY_XPATH):
+    #     self.user_behavior.click_button(by_xpath=by_xpath)
+    #     self.user_behavior.switch_to_window(self.get_current_window_handle())
+
+    def get_code(self):
+        self.user_behavior.set_window_size(self.WINDOW_WIDTH, self.WINDOW_HEIGHT)
+        self.save_screen_shot()
+        self.show_code()
 
 
 if __name__ == '__main__':
     from userbehavior import UserBehavior
 
-    user_behavior = UserBehavior()
-    user_behavior.browser_get("https://pc.xuexi.cn/points/login.html?ref=https://www.xuexi.cn/")
-    user_behavior.maximize_window()
-    login = Login(user_behavior)
-    # login.click_login()
-    login.save_screen_shot()
-    login.show_code()
+    # _user_behavior = UserBehavior()
+    # _user_behavior.browser_get("https://pc.xuexi.cn/points/login.html?ref=https://www.xuexi.cn/")
+    # login = Login(_user_behavior)
+    # login.get_code()
+
+    _user_behavior = UserBehavior()
+    _user_behavior.browser_get("https://baidu.com")
+
+    watch_video = WatchVideo(_user_behavior)
+
+    videos = watch_video.clicks(by_id="Ck3ln2wlyg3k00")
+    time.sleep(5)
+    for _ in videos:
+        watch_video.switch_to_window(watch_video.get_current_window_handle())
+
+        while True:
+
+            if watch_video.was_over():
+                print("播放完毕")
+                break
+            else:
+                print("正在播放")
+
+        watch_video.close_current_window()
+        watch_video.switch_to_window(watch_video.get_current_window_handle())

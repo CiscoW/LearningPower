@@ -27,6 +27,12 @@ class UserBehavior(object):
 
         self.browser.get(url)
 
+    def implicitly_wait(self, time_out):
+        self.browser.implicitly_wait(time_out)
+
+    def refresh(self):
+        self.browser.refresh()
+
     def open_window_handle(self, url=""):
         self.browser.execute_script('window.open("%s");' % url)
         return self.get_window_handles()[-1]
@@ -42,6 +48,9 @@ class UserBehavior(object):
 
     def maximize_window(self):
         self.browser.maximize_window()
+
+    def set_window_size(self, width, height):
+        self.browser.set_window_size(width, height)
 
     def page_source(self):
         return self.browser.page_source
